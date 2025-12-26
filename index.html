@@ -2,67 +2,62 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Tubes AKA - Metode Horner (Ultra-Stable Version)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tubes AKA - Metode Horner (Fixed Precision)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #3498db; --bg: #f8fafc; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 20px; background-color: var(--bg); }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        .header { text-align: center; border-bottom: 3px solid var(--primary); margin-bottom: 25px; padding-bottom: 10px; }
-        .controls { display: flex; gap: 15px; justify-content: center; align-items: center; margin-bottom: 25px; background: #f1f5f9; padding: 20px; border-radius: 10px; }
-        input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 150px; font-size: 16px; }
-        button { padding: 10px 25px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:hover { background: #2980b9; }
-        button:disabled { background: #94a3b8; cursor: not-allowed; }
-        .status-container { text-align: center; margin-bottom: 10px; }
-        .progress-text { color: var(--primary); font-weight: bold; font-size: 0.9em; }
-        table { width: 100%; border-collapse: collapse; margin-top: 25px; }
-        th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: center; }
-        th { background: #f8fafc; color: #475569; }
-        .footer { font-size: 0.85em; color: #64748b; margin-top: 30px; text-align: center; }
+        :root { --primary: #2563eb; --danger: #dc2626; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px; background: var(--bg); color: #334155; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #0f172a; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #64748b; margin-top: 0; margin-bottom: 30px; }
+        
+        .controls { background: #f1f5f9; padding: 20px; border-radius: 8px; display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 20px; }
+        input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100px; text-align: center; }
+        button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1d4ed8; }
+        button:disabled { background: #94a3b8; cursor: wait; }
+
+        .status { text-align: center; font-weight: 600; color: var(--primary); height: 24px; margin-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 14px; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: center; }
+        th { background: #f8fafc; }
+        
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #94a3b8; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <h2>Analisis Kompleksitas Algoritma</h2>
-        <p>Evaluasi Polinomial (Metode Horner) | Iteratif vs Rekursif [cite: 17]</p>
-    </div>
+    <h1>Analisis Kompleksitas: Metode Horner</h1>
+    <p class="subtitle">Iteratif vs Rekursif (High Precision Mode)</p>
 
     <div class="controls">
-        <label>Input Maksimal (n):</label>
-        <input type="number" id="inputN" value="3000" min="100" max="10000">
-        <button id="runBtn" onclick="runExperiment()">Mulai Analisis</button>
+        <label>Input Maks (n):</label>
+        <input type="number" id="inputN" value="5000" min="100" max="15000">
+        <button id="runBtn" onclick="runBenchmark()">Mulai Test</button>
     </div>
 
-    <div class="status-container">
-        <div id="statusText" class="progress-text">Siap untuk pengujian.</div>
-    </div>
-    
-    <canvas id="hornerChart" height="120"></canvas>
+    <div class="status" id="statusText">Siap.</div>
+    <canvas id="chart"></canvas>
 
     <table>
         <thead>
-            <tr>
-                <th>Derajat (n)</th>
-                <th>Iteratif (ms)</th>
-                <th>Rekursif (ms)</th>
-            </tr>
+            <tr><th>N</th><th>Iteratif (ms)</th><th>Rekursif (ms)</th></tr>
         </thead>
-        <tbody id="tableBody">
-            <tr><td colspan="3">Data akan muncul di sini.</td></tr>
-        </tbody>
+        <tbody id="tableBody"></tbody>
     </table>
 
     <div class="footer">
-        Farel Gian Pratama (103012400195) | Akmal Luigi (103012400) | Ahmad Aqiela (103012400077)
+        Farel Gian Pratama (103012400195) | Akmal Luigi (103012400xxx) | Ahmad Aqiela (103012400077)
     </div>
 </div>
 
 <script>
-    let myChart;
+    let myChart = null;
 
+    // --- ALGORITMA --- iteratif
     function hornerIterative(poly, x) {
         let result = poly[0];
         for (let i = 1; i < poly.length; i++) {
@@ -71,100 +66,131 @@
         return result;
     }
 
+    // --- ALGORITMA --- rekursif
     function hornerRecursive(poly, x, i) {
         if (i === poly.length - 1) return poly[i];
         return poly[i] + x * hornerRecursive(poly, x, i + 1);
     }
 
-    function getStableAverage(data) {
-        data.sort((a, b) => a - b);
-        const start = Math.floor(data.length * 0.25);
-        const end = Math.floor(data.length * 0.75);
-        const trimmed = data.slice(start, end);
-        return trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
-    }
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    async function runExperiment() {
-        const input = document.getElementById('inputN');
+    async function runBenchmark() {
+        const nMax = parseInt(document.getElementById('inputN').value);
         const btn = document.getElementById('runBtn');
         const status = document.getElementById('statusText');
+        const tbody = document.getElementById('tableBody');
         
-        const maxN = parseInt(input.value);
-        input.value = ""; 
         btn.disabled = true;
-
-        const sizes = [1, 100, 500, 1000, 1500, 2000, 2500, maxN].sort((a,b) => a-b);
-        const xVal = 2.5;
-        const trials = 2000; 
-
+        tbody.innerHTML = "";
+        
+        const steps = [100, 500, 1000, 2000, 3000, 4000, 5000, nMax].sort((a,b)=>a-b);
+        const uniqueSteps = [...new Set(steps)];
+        
         const dataI = [];
         const dataR = [];
-        const tableRows = [];
+        const labels = [];
+        const xVal = 1.5;
 
-        status.innerText = "Melakukan pemanasan sistem...";
-        const warmPoly = new Float64Array(100).fill(0.5);
-        for(let i=0; i<5000; i++) { hornerIterative(warmPoly, xVal); hornerRecursive(warmPoly, xVal, 0); }
+        // PEMANASAN (Warmup) agar JIT Compiler siap
+        status.innerText = "Pemanasan CPU...";
+        await sleep(100);
+        const warmPoly = new Float64Array(100).fill(1);
+        for(let i=0; i<10000; i++) hornerIterative(warmPoly, xVal);
 
-        for (let n of sizes) {
-            status.innerText = `Menganalisis n = ${n}...`;
-            await new Promise(r => setTimeout(r, 10));
+        for (let n of uniqueSteps) {
+            status.innerText = `Menguji n = ${n} ...`;
+            await sleep(20); // Beri nafas UI
 
             const poly = new Float64Array(n + 1).fill(Math.random());
             
-            // Pengukuran Iteratif
-            let resultsI = [];
-            for(let t=0; t<trials; t++) {
-                let s = performance.now();
+            // --- UKUR ITERATIF ---
+            // Kita jalankan 500 kali (BATCH) lalu ambil rata-ratanya
+            // agar angkanya tidak 0.00
+            const batchSize = 500; 
+            
+            let tStart = performance.now();
+            for(let b=0; b<batchSize; b++) {
                 hornerIterative(poly, xVal);
-                resultsI.push(performance.now() - s);
             }
-            const avgI = getStableAverage(resultsI);
+            let tEnd = performance.now();
+            // Total waktu dibagi jumlah looping = waktu per 1 eksekusi
+            let avgI = (tEnd - tStart) / batchSize;
             dataI.push(avgI);
 
-            // Pengukuran Rekursif
+            // --- UKUR REKURSIF ---
             let avgR = null;
             try {
-                if (n > 7000) throw new Error("SO");
-                let resultsR = [];
-                for(let t=0; t<trials; t++) {
-                    let s = performance.now();
+                // Cek dulu apakah akan stack overflow
+                if(n > 9000) throw new Error("Risk");
+                
+                tStart = performance.now();
+                // Batch size untuk rekursif sedikit lebih kecil agar tidak hang lama
+                const batchRec = 200; 
+                for(let b=0; b<batchRec; b++) {
                     hornerRecursive(poly, xVal, 0);
-                    resultsR.push(performance.now() - s);
                 }
-                avgR = getStableAverage(resultsR);
-            } catch (e) { avgR = null; }
+                tEnd = performance.now();
+                avgR = (tEnd - tStart) / batchRec;
+            } catch (e) {
+                avgR = null; // Stack overflow
+            }
             dataR.push(avgR);
 
-            tableRows.push(`<tr><td>${n}</td><td>${avgI.toFixed(8)}</td><td>${avgR !== null ? avgR.toFixed(8) : "Stack Overflow"}</td></tr>`);
+            // Update Tabel Realtime
+            const rText = avgR === null ? "<span style='color:red'>Stack Overflow</span>" : avgR.toFixed(5);
+            const row = `<tr>
+                <td>${n}</td>
+                <td style="color:#2563eb">${avgI.toFixed(5)}</td>
+                <td style="color:#dc2626">${rText}</td>
+            </tr>`;
+            tbody.innerHTML += row;
         }
 
-        document.getElementById('tableBody').innerHTML = tableRows.join("");
-        renderChart(sizes, dataI, dataR);
-        status.innerText = "Analisis Selesai. Grafik Stabil Dihasilkan.";
+        renderChart(uniqueSteps, dataI, dataR);
+        status.innerText = "Selesai.";
         btn.disabled = false;
     }
 
-    function renderChart(labels, dataI, dataR) {
-        const ctx = document.getElementById('hornerChart').getContext('2d');
-        if (myChart) myChart.destroy();
+    function renderChart(labels, dI, dR) {
+        const ctx = document.getElementById('chart').getContext('2d');
+        if(myChart) myChart.destroy();
+
         myChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [
-                    { label: 'Iteratif', data: dataI, borderColor: '#3498db', borderWidth: 3, pointRadius: 4, fill: false },
-                    { label: 'Rekursif', data: dataR, borderColor: '#e74c3c', borderWidth: 3, pointRadius: 4, fill: false }
+                    {
+                        label: 'Iteratif (ms)',
+                        data: dI,
+                        borderColor: '#2563eb',
+                        backgroundColor: '#2563eb',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Rekursif (ms)',
+                        data: dR,
+                        borderColor: '#dc2626',
+                        backgroundColor: '#dc2626',
+                        tension: 0.3
+                    }
                 ]
             },
             options: {
                 responsive: true,
+                plugins: {
+                    title: { display: true, text: 'Grafik Kompleksitas Waktu' }
+                },
                 scales: {
-                    x: { title: { display: true, text: 'Ukuran Masukan (n)' } },
-                    y: { title: { display: true, text: 'Waktu Rata-rata (ms)' }, beginAtZero: true }
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Waktu (milidetik)' }
+                    }
                 }
             }
         });
     }
 </script>
+
 </body>
-</html> 
+</html>
